@@ -245,6 +245,46 @@
 </head>
 <body>
 
+<!-- PIN GATE -->
+<div id="pinGate" style="position:fixed;inset:0;background:#0d0d0d;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0">
+  <div style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:32px;letter-spacing:3px;color:#fff;text-transform:uppercase;margin-bottom:4px">VALARD <span style="color:#C8102E">DISTRIBUTION</span></div>
+  <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;letter-spacing:3px;color:#555;text-transform:uppercase;margin-bottom:36px">Resource Board</div>
+  <div style="display:flex;gap:10px;margin-bottom:10px" id="pinDots">
+    <div class="pin-dot" id="pd0"></div>
+    <div class="pin-dot" id="pd1"></div>
+    <div class="pin-dot" id="pd2"></div>
+    <div class="pin-dot" id="pd3"></div>
+  </div>
+  <div id="pinError" style="font-family:'Barlow Condensed',sans-serif;font-size:12px;color:#ef4444;letter-spacing:1px;height:18px;margin-bottom:8px;text-transform:uppercase"></div>
+  <div style="display:grid;grid-template-columns:repeat(3,64px);gap:8px">
+    <button class="pin-btn" onclick="pinPress('1')">1</button>
+    <button class="pin-btn" onclick="pinPress('2')">2</button>
+    <button class="pin-btn" onclick="pinPress('3')">3</button>
+    <button class="pin-btn" onclick="pinPress('4')">4</button>
+    <button class="pin-btn" onclick="pinPress('5')">5</button>
+    <button class="pin-btn" onclick="pinPress('6')">6</button>
+    <button class="pin-btn" onclick="pinPress('7')">7</button>
+    <button class="pin-btn" onclick="pinPress('8')">8</button>
+    <button class="pin-btn" onclick="pinPress('9')">9</button>
+    <button class="pin-btn pin-clear" onclick="pinClear()">⌫</button>
+    <button class="pin-btn" onclick="pinPress('0')">0</button>
+    <button class="pin-btn pin-enter" onclick="pinEnter()">↵</button>
+  </div>
+  <div style="font-family:'Barlow Condensed',sans-serif;font-size:10px;color:#333;letter-spacing:1px;margin-top:28px;text-transform:uppercase">Valard Construction — HBU 51/57</div>
+</div>
+<style>
+  .pin-dot{width:12px;height:12px;border-radius:50%;background:#222;border:2px solid #444;transition:all .15s}
+  .pin-dot.filled{background:#C8102E;border-color:#C8102E}
+  .pin-dot.shake{animation:pinShake .3s ease}
+  .pin-btn{width:64px;height:64px;background:#1a1a1a;border:1px solid #2a2a2a;color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;cursor:pointer;transition:background .1s;border-radius:4px}
+  .pin-btn:hover{background:#252525}
+  .pin-btn:active{background:#C8102E}
+  .pin-clear{color:#888;font-size:18px}
+  .pin-enter{color:#C8102E}
+  @keyframes pinShake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+</style>
+
+
 <header>
   <div class="logo-block">
     <div class="logo-mark">V</div>
@@ -2166,6 +2206,64 @@ ${bodyHtml}
 
 
 document.addEventListener('click', () => { closeCtx(); closeTip(); });
+
+// ─── PIN GATE ───────────────────────────────────────────────────────────────
+(function() {
+  const HASH = '8d0a6b9c2e4f1a3d5b7c9e2f4a6b8d0a'; // salted hash placeholder
+  const PIN  = '3523';
+  const SESSION_KEY = 'vrd_auth';
+  let entered = '';
+
+  function unlock() {
+    sessionStorage.setItem(SESSION_KEY, '1');
+    const gate = document.getElementById('pinGate');
+    gate.style.transition = 'opacity .4s';
+    gate.style.opacity = '0';
+    setTimeout(() => gate.style.display = 'none', 400);
+  }
+
+  // Already unlocked this session
+  if (sessionStorage.getItem(SESSION_KEY) === '1') {
+    document.getElementById('pinGate').style.display = 'none';
+  }
+
+  window.pinPress = function(d) {
+    if (entered.length >= 4) return;
+    entered += d;
+    document.getElementById('pd' + (entered.length - 1)).classList.add('filled');
+    document.getElementById('pinError').textContent = '';
+    if (entered.length === 4) setTimeout(pinEnter, 120);
+  };
+
+  window.pinClear = function() {
+    if (!entered.length) return;
+    document.getElementById('pd' + (entered.length - 1)).classList.remove('filled');
+    entered = entered.slice(0, -1);
+  };
+
+  window.pinEnter = function() {
+    if (entered === PIN) {
+      unlock();
+    } else {
+      document.getElementById('pinError').textContent = 'Incorrect PIN';
+      document.querySelectorAll('.pin-dot').forEach(d => {
+        d.classList.remove('filled');
+        d.classList.add('shake');
+        setTimeout(() => d.classList.remove('shake'), 400);
+      });
+      entered = '';
+    }
+  };
+
+  // Keyboard support
+  document.addEventListener('keydown', function(e) {
+    if (document.getElementById('pinGate').style.display === 'none') return;
+    if (e.key >= '0' && e.key <= '9') pinPress(e.key);
+    if (e.key === 'Backspace') pinClear();
+    if (e.key === 'Enter') pinEnter();
+  });
+})();
+
 
 // ─── INIT ──────────────────────────────────────────────────────────────────
 seedData();
